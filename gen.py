@@ -14,21 +14,35 @@ import numpy as np
 import pickle
 
 
+# char_counts = {"Input" : 0, "Output" : 0}
+
+with open('char_counts.pk', 'rb') as f:
+    char_counts = pickle.load(f)
+
+print("input chars used:", char_counts["Input"])
+print("output chars used:", char_counts["Output"])
+print("Amount spent:", (0.000001 * char_counts["Input"] + 0.0000170 * char_counts["Output"] ))
+
+
 messages_dict = {"Henry" : [
     {"role": "system", "content": "You are an unhelpful travel guide named Henry."},
     {"role": "system", "content": "You REALLY like to make puns."},
   ], 
   "Helen" : [
     {"role": "system", "content": "You are a scientist name Helen."},
-    {"role": "system", "content": "You answer every question with a question."},
+    # {"role": "system", "content": "You answer every question with a question."},
+    {"role": "system", "content": "You constantly brag about how good you are at the mobile game Super Auto Pets"},
+    {"role": "system", "content": "You think that you are the BEST at super auto pets"},
   ],
     "Elby" : [
     {"role": "system", "content": "You are a Cat named Elby."},
     {"role": "system", "content": "You can only speak in the word 'Meow'"},
   ],} 
 
-with open('saved_chat.pk', 'rb') as f:
-    messages_dict = pickle.load(f)
+# with open('saved_chat.pk', 'rb') as f:
+#     messages_dict = pickle.load(f)
+
+client = OpenAI(api_key='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')
 
 print(messages_dict)
 
@@ -47,9 +61,9 @@ while choice is not "stop":
 
     print("User:", text)
 
-    messages_dict[choice].append({"role": "user", "content": text})
+    char_counts["Input"] += len(text)
 
-    client = OpenAI(api_key='')
+    messages_dict[choice].append({"role": "user", "content": text})
 
     response = client.chat.completions.create(
     model="gpt-3.5-turbo",
@@ -58,16 +72,30 @@ while choice is not "stop":
 
     reply = response.choices[0].message.content
 
+    char_counts["Output"] += len(reply)
+
     messages_dict[choice].append({"role": "assistant", "content": reply})
 
     print(choice, ":", reply)
     tts = gTTS(reply)
     tts.save("speech.mp3")
-    playsound.playsound("speech.mp3")
-    os.remove("speech.mp3")
 
+    # response = client.audio.speech.create(
+    #     model="tts-1",
+    #     voice="alloy",
+    #     input="(angry)" + reply
+    # )
+
+    # response.stream_to_file("output.mp3")
+    playsound.playsound("output.mp3")
+    os.remove("output.mp3")
+
+    with open('char_counts.pk', 'wb') as f:
+      pickle.dump(char_counts, f)
 
     choice = input("who are you talking to?")
+
+
 
 with open('saved_chat.pk', 'wb') as f:
     pickle.dump(messages_dict, f)
